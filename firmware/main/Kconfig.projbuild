@@ -21,8 +21,16 @@ config JCB_SOFTAP_PASS
     string "SoftAP password (WPA2, >= 8 chars — NFR-9)"
     default "joyconbridge"
 
+config JCB_STATUS_LED_ENABLE
+    bool "Enable WS2812 status LED"
+    default n
+    help
+        Enable the addressable WS2812 status LED driver. Disable this for
+        boards that only have a power LED or do not have a WS2812 connected.
+
 config JCB_STATUS_LED_GPIO
     int "WS2812 status LED GPIO"
+    depends on JCB_STATUS_LED_ENABLE
     default 8
 
 config JCB_MODE_BUTTON_GPIO

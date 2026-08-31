@@ -341,9 +341,13 @@ void app_main(void)
     }
     ESP_LOGI(TAG, "startup: nvs ready");
 
+#if CONFIG_JCB_STATUS_LED_ENABLE
     status_led_init();
     ESP_LOGI(TAG, "startup: led ready");
     status_led_set(LED_BOOT);
+#else
+    ESP_LOGI(TAG, "startup: led disabled by build configuration");
+#endif
 
     config_store_init();
     config_store_load(&s_cfg);

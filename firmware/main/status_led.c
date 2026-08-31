@@ -2,14 +2,16 @@
 
 #include "status_led.h"
 
+#include "sdkconfig.h"
+
+#if CONFIG_JCB_STATUS_LED_ENABLE
+
 #include <math.h>
 
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "led_strip.h"
-#include "sdkconfig.h"
-
 static const char *TAG = "led";
 static led_strip_handle_t s_strip;
 static volatile led_pattern_t s_pat = LED_BOOT;
@@ -68,3 +70,10 @@ void status_led_init(void)
 }
 
 void status_led_set(led_pattern_t p) { s_pat = p; }
+
+#else
+
+void status_led_init(void) {}
+void status_led_set(led_pattern_t p) { (void)p; }
+
+#endif
