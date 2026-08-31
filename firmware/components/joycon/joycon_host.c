@@ -64,6 +64,24 @@ static int device_side(const uni_hid_device_t *d)
     switch (d->controller_type) {
         case CONTROLLER_TYPE_SwitchJoyConLeft:  return JC_SIDE_LEFT;
         case CONTROLLER_TYPE_SwitchJoyConRight: return JC_SIDE_RIGHT;
+#if CONFIG_JCB_TEST_PRO_CONTROLLERS
+        case CONTROLLER_TYPE_SwitchProController: {
+            bd_addr_t addr;
+            uni_bt_conn_get_address(&d->conn, addr);
+
+            /* Reuse the same virtual half when a known test controller
+             * reconnects; otherwise assign the first available half. */
+            for (int side = 0; side < 2; side++) {
+                if (S.slot[side].addr_valid &&
+                    memcmp(S.slot[side].addr, addr, sizeof(addr)) == 0)
+                    return side;
+            }
+            for (int side = 0; side < 2; side++) {
+                if (S.slot[side].dev == NULL) return side;
+            }
+            return -1;
+        }
+#endif
         default: break;
     }
     uint16_t vid = uni_hid_device_get_vendor_id(d);
@@ -190,7 +208,9 @@ static uni_error_t plat_on_device_ready(uni_hid_device_t *d)
 {
     int side = device_side(d);
     if (side < 0) {
-        ESP_LOGW(TAG, "non-Joy-Con or unknown side; rejecting (FR-2)");
+        ESP_LOGW(TAG, "unsupported controller type %d (vid=0x%04x pid=0x%04x); rejecting",
+                 d->controller_type, uni_hid_device_get_vendor_id(d),
+                 uni_hid_device_get_product_id(d));
         return UNI_ERROR_IGNORE_DEVICE;
     }
     slot_bind(side, d);
