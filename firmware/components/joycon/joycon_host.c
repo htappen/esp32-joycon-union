@@ -19,6 +19,8 @@
 #include "freertos/task.h"
 
 /* Bluepad32 / uni headers (from the managed component). */
+#include "btstack_port_esp32.h"
+#include "btstack_run_loop.h"
 #include "uni.h"
 
 static const char *TAG = "jc_host";
@@ -40,6 +42,16 @@ static struct {
     bool              inited;
 } S;
 
+static void btstack_init_and_loop_task(void *arg)
+{
+    TaskHandle_t caller = (TaskHandle_t)arg;
+    btstack_init();
+    uni_init(0, NULL);
+    xTaskNotifyGive(caller);
+    btstack_run_loop_execute();
+    vTaskDelete(NULL);
+}
+
 /* ------------------------------------------------------------------ */
 /* Side identification                                                 */
 /* ------------------------------------------------------------------ */
@@ -49,14 +61,13 @@ static int device_side(const uni_hid_device_t *d)
     /* Bluepad32 exposes the controller subtype; Joy-Cons come through as
      * distinct left/right types. Fall back to VID/PID (Nintendo 0x057E,
      * Joy-Con L 0x2006, Joy-Con R 0x2007). */
-    switch (uni_hid_device_get_controller_subtype(d)) {
-        case CONTROLLER_SUBTYPE_SWITCH_JOYCON_LEFT:  return JC_SIDE_LEFT;
-        case CONTROLLER_SUBTYPE_SWITCH_JOYCON_RIGHT: return JC_SIDE_RIGHT;
+    switch (d->controller_type) {
+        case CONTROLLER_TYPE_SwitchJoyConLeft:  return JC_SIDE_LEFT;
+        case CONTROLLER_TYPE_SwitchJoyConRight: return JC_SIDE_RIGHT;
         default: break;
     }
-    uint16_t vid = 0, pid = 0;
-    uni_hid_device_get_vendor_id(d, &vid);
-    uni_hid_device_get_product_id(d, &pid);
+    uint16_t vid = uni_hid_device_get_vendor_id(d);
+    uint16_t pid = uni_hid_device_get_product_id(d);
     if (vid == 0x057E && pid == 0x2006) return JC_SIDE_LEFT;
     if (vid == 0x057E && pid == 0x2007) return JC_SIDE_RIGHT;
     return -1;
@@ -164,7 +175,7 @@ static void slot_bind(int side, uni_hid_device_t *d)
     sl->dev = d;
 
     bd_addr_t a;
-    uni_hid_device_get_address(d, a);
+    uni_bt_conn_get_address(&d->conn, a);
     memcpy(sl->addr, a, 6);
     sl->addr_valid = true;
 
@@ -175,15 +186,15 @@ static void slot_bind(int side, uni_hid_device_t *d)
 
 static void plat_on_device_connected(uni_hid_device_t *d) { (void)d; }
 
-static void plat_on_device_ready(uni_hid_device_t *d)
+static uni_error_t plat_on_device_ready(uni_hid_device_t *d)
 {
     int side = device_side(d);
     if (side < 0) {
         ESP_LOGW(TAG, "non-Joy-Con or unknown side; rejecting (FR-2)");
-        uni_hid_device_disconnect(d);
-        return;
+        return UNI_ERROR_IGNORE_DEVICE;
     }
     slot_bind(side, d);
+    return UNI_ERROR_SUCCESS;
 }
 
 static void plat_on_device_disconnected(uni_hid_device_t *d)
@@ -210,7 +221,7 @@ static void plat_on_controller_data(uni_hid_device_t *d, uni_controller_t *ctl)
 
     joycon_state_t st;
     translate((jc_side_t)side, &ctl->gamepad, &st);
-    st.battery_pct = ctl->battery == UNI_BATTERY_UNKNOWN
+    st.battery_pct = ctl->battery == UNI_CONTROLLER_BATTERY_NOT_AVAILABLE
                          ? 0xFF
                          : (uint8_t)((ctl->battery * 100) / 255);
     st.last_update_ms = (uint32_t)(esp_timer_get_time() / 1000);
@@ -255,7 +266,16 @@ esp_err_t joycon_host_init(const joycon_host_cfg_t *cfg)
     }
 
     uni_platform_set_custom(&s_platform);
-    uni_init(0, NULL);          /* starts the BTstack run loop task */
+    /* Bluepad32's ESP-IDF entry point initializes the controller before
+     * uni_init() and then runs the BTstack event loop on the BT core. Keep
+     * both in that task so HCI setup can service its asynchronous events. */
+    TaskHandle_t caller = xTaskGetCurrentTaskHandle();
+    if (xTaskCreatePinnedToCore(btstack_init_and_loop_task, "btstack", 6144,
+                                caller, 5, NULL, 0) != pdPASS) {
+        return ESP_ERR_NO_MEM;
+    }
+    if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(2000)) == 0)
+        return ESP_ERR_TIMEOUT;
     S.inited = true;
     ESP_LOGI(TAG, "initialized");
     return ESP_OK;
@@ -277,10 +297,6 @@ void joycon_host_forget(jc_side_t side)
     if (side != JC_SIDE_LEFT && side != JC_SIDE_RIGHT) return;
     side_slot_t *sl = &S.slot[side];
     if (sl->dev) uni_hid_device_disconnect(sl->dev);
-    if (sl->addr_valid) {
-        bd_addr_t a; memcpy(a, sl->addr, 6);
-        uni_bt_del_keys_safe(a);
-    }
     memset(sl, 0, sizeof(*sl));
     if (S.cfg.on_link) S.cfg.on_link(side, false, S.cfg.ctx);
     ESP_LOGW(TAG, "forgot Joy-Con %s", side == JC_SIDE_LEFT ? "L" : "R");
@@ -288,6 +304,7 @@ void joycon_host_forget(jc_side_t side)
 
 void joycon_host_forget_all(void)
 {
+    uni_bt_del_keys_safe();
     joycon_host_forget(JC_SIDE_LEFT);
     joycon_host_forget(JC_SIDE_RIGHT);
 }
@@ -314,6 +331,7 @@ void joycon_host_set_player_led(jc_side_t side)
 {
     side_slot_t *sl = &S.slot[side];
     if (!sl->connected || !sl->dev) return;
-    /* Player 1 = LED 1 lit. Bluepad32 exposes a set-player-leds helper. */
-    uni_hid_device_set_player_leds(sl->dev, 0x01);
+    /* Player 1 = LED 1 lit. The parser owns the controller-specific command. */
+    if (sl->dev->report_parser.set_player_leds != NULL)
+        sl->dev->report_parser.set_player_leds(sl->dev, 0x01);
 }

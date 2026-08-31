@@ -12,11 +12,14 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 set(_gatt_in  "${CMAKE_CURRENT_SOURCE_DIR}/xbox_hid.gatt")
 set(_gatt_out "${CMAKE_CURRENT_BINARY_DIR}/xbox_hid.h")
-set(_compile_gatt "$ENV{IDF_PATH}/../btstack/tool/compile_gatt.py")
+set(_compile_gatt "$ENV{IDF_PATH}/components/btstack/tool/compile_gatt.py")
 
 if(NOT EXISTS "${_compile_gatt}")
     # Fall back to the managed-component copy.
     file(GLOB_RECURSE _cg "${CMAKE_BINARY_DIR}/../managed_components/*/compile_gatt.py")
+    if(NOT _cg AND DEFINED ENV{IDF_PATH})
+        file(GLOB_RECURSE _cg "$ENV{IDF_PATH}/components/btstack/tool/compile_gatt.py")
+    endif()
     if(_cg)
         list(GET _cg 0 _compile_gatt)
     endif()

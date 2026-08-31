@@ -1,21 +1,27 @@
 # Managed dependencies (ESP-IDF Component Manager).
 #
-# Bluepad32 provides the Classic HID *host* and bundles BTstack as the host
-# stack.  Pin these to the exact versions verified against Bluepad32's
-# CHANGELOG.md at pin time (plan §2, NFR-10) — the ranges below are a starting
-# point and MUST be locked to explicit versions before M0.
+# Bluepad32 provides the Classic HID host. Its official ESP-IDF integration
+# installs the bundled BTstack component into ESP-IDF itself.
 dependencies:
   idf:
     version: ">=5.3.0"
 
-  # Classic HID host + bundled BTstack.
-  ricardoquesada/bluepad32:
-    version: "^4.2.0"
+  # The component is nested in the Bluepad32 repository and is not published
+  # under the ESP Component Registry namespace.
+  bluepad32:
+    git: https://github.com/ricardoquesada/bluepad32.git
+    path: src/components/bluepad32
+    version: e9b755faabc240585da42e6d26164bb2cdd064d3
 
-  # BTstack port (bluepad32 depends on this transitively; listed so the LE
-  # peripheral code can rely on a known version — see components/ble_out).
-  ricardoquesada/btstack:
-    version: "*"
+  # Bluepad32's ESP32 console sources require these sibling components.
+  cmd_nvs:
+    git: https://github.com/ricardoquesada/bluepad32.git
+    path: src/components/cmd_nvs
+    version: e9b755faabc240585da42e6d26164bb2cdd064d3
+  cmd_system:
+    git: https://github.com/ricardoquesada/bluepad32.git
+    path: src/components/cmd_system
+    version: e9b755faabc240585da42e6d26164bb2cdd064d3
 
   # WS2812 status LED.
   espressif/led_strip:

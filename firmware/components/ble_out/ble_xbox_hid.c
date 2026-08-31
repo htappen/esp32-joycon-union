@@ -26,7 +26,11 @@
 #include "ble/gatt-service/hids_device.h"
 
 #include "xbox_descriptor.h"
+/* Bluepad32's own GATT database also exports `profile_data`; give this
+ * database a private name so both services can link into one image. */
+#define profile_data xbox_hid_profile_data
 #include "xbox_hid.h"          /* generated from xbox_hid.gatt by compile_gatt.py */
+#undef profile_data
 
 static const char *TAG = "ble_xbox";
 
@@ -169,7 +173,7 @@ esp_err_t ble_xbox_hid_init(const ble_xbox_cfg_t *cfg)
     /* BTstack core (l2cap/sm) is already up via Bluepad32; only add the LE
      * peripheral profile. att_server_init must run against the combined db
      * generated from xbox_hid.gatt — see the M4 note at the top of file. */
-    att_server_init(profile_data, NULL, NULL);
+    att_server_init(xbox_hid_profile_data, NULL, NULL);
 
     device_information_service_server_init();
     device_information_service_server_set_manufacturer_name(XBOX_MANUFACTURER);

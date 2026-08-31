@@ -106,7 +106,8 @@ static void update_led(void)
 static void output_task(void *arg)
 {
     (void)arg;
-    const TickType_t period = pdMS_TO_TICKS(1000 / CONFIG_JCB_OUTPUT_RATE_HZ);
+    const TickType_t configured_period = pdMS_TO_TICKS(1000 / CONFIG_JCB_OUTPUT_RATE_HZ);
+    const TickType_t period = configured_period > 0 ? configured_period : 1;
     TickType_t next = xTaskGetTickCount();
     uint32_t last_housekeep = 0;
     uint8_t report[XBOX_REPORT_LEN];
@@ -338,15 +339,20 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_erase());
         ESP_ERROR_CHECK(nvs_flash_init());
     }
+    ESP_LOGI(TAG, "startup: nvs ready");
 
-    status_led_init();
-    status_led_set(LED_BOOT);
+    // Temporarily disabled while bringing up the rest of the firmware.
+    // status_led_init();
+    // status_led_set(LED_BOOT);
+    ESP_LOGI(TAG, "startup: led disabled");
 
     config_store_init();
     config_store_load(&s_cfg);
+    ESP_LOGI(TAG, "startup: config ready");
     merge_engine_init(&s_merge, &s_cfg.map);
 
     s_jc_queue = xQueueCreate(16, sizeof(joycon_state_t));
+    ESP_LOGI(TAG, "startup: queue ready");
 
     joycon_host_cfg_t jhc = {
         .on_state = on_jc_state,
@@ -357,10 +363,12 @@ void app_main(void)
     if (s_cfg.joycon_right.valid)
         memcpy(jhc.remembered_right, s_cfg.joycon_right.addr, 6);
     ESP_ERROR_CHECK(joycon_host_init(&jhc));
+    ESP_LOGI(TAG, "startup: joycon host ready");
 
     ble_xbox_cfg_t bxc = { .on_conn = on_host_conn, .allow_new_pairing = true };
     if (s_cfg.host.valid) memcpy(bxc.remembered_host, s_cfg.host.addr, 6);
     ESP_ERROR_CHECK(ble_xbox_hid_init(&bxc));
+    ESP_LOGI(TAG, "startup: BLE host ready");
 
     static const mode_manager_cb_t mmc = {
         .enter_config  = enter_config,
@@ -368,6 +376,7 @@ void app_main(void)
         .factory_reset = do_factory_reset,
     };
     mode_manager_init(&mmc);
+    ESP_LOGI(TAG, "startup: mode manager ready");
 
     xTaskCreatePinnedToCore(output_task, "output", 4096, NULL, 6, NULL, 1);
 
