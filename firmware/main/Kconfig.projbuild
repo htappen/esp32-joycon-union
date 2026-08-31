@@ -1,0 +1,44 @@
+menu "Joy-Con Bridge"
+
+config JCB_WIFI_STA_SSID
+    string "Config-Mode Wi-Fi STA SSID (empty => SoftAP)"
+    default ""
+    help
+        If non-empty, Config Mode joins this existing network and serves the
+        UI at http://joycon-bridge.local/ (mDNS) plus the DHCP IP. If empty,
+        Config Mode brings up a SoftAP (FR-18). SoftAP is also the fallback
+        when a STA join fails.
+
+config JCB_WIFI_STA_PASS
+    string "Config-Mode Wi-Fi STA password"
+    default ""
+
+config JCB_SOFTAP_SSID
+    string "SoftAP SSID"
+    default "joycon-bridge"
+
+config JCB_SOFTAP_PASS
+    string "SoftAP password (WPA2, >= 8 chars — NFR-9)"
+    default "joyconbridge"
+
+config JCB_STATUS_LED_GPIO
+    int "WS2812 status LED GPIO"
+    default 8
+
+config JCB_MODE_BUTTON_GPIO
+    int "Mode button GPIO (reuse BOOT / GPIO0)"
+    default 0
+
+config JCB_MODE_BUTTON_LONG_MS
+    int "Long-press duration to toggle Play/Config mode (ms)"
+    default 1500
+
+config JCB_AB_XBOX_POSITION_DEFAULT
+    bool "Default A/B/X/Y to Xbox label position (else Nintendo position)"
+    default n
+
+config JCB_OUTPUT_RATE_HZ
+    int "Host report / merge tick rate (Hz) — NFR-2 floor is 100"
+    default 250
+
+endmenu

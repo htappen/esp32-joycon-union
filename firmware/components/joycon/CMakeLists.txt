@@ -1,0 +1,11 @@
+idf_component_register(
+    SRCS
+        "joycon_decode.c"
+        "joycon_host.c"
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+        merge
+        bluepad32
+        esp_timer
+)

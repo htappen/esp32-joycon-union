@@ -1,0 +1,38 @@
+:root { color-scheme: light dark; --bg:#f4f4f6; --card:#fff; --line:#d8d8de;
+  --fg:#1b1b1f; --muted:#6b6b78; --accent:#2f7d4f; --danger:#b23c3c; --warn:#b26a1c; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#16161a; --card:#1f1f25; --line:#33333c; --fg:#eaeaf0; --muted:#9a9aa6; }
+}
+* { box-sizing: border-box; }
+body { margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+header { display:flex; align-items:baseline; gap:.75rem; padding:1rem 1.25rem;
+  border-bottom:1px solid var(--line); }
+h1 { font-size:1.15rem; margin:0; }
+h2 { font-size:.95rem; margin:0 0 .75rem; text-transform:uppercase; letter-spacing:.04em;
+  color:var(--muted); }
+main { max-width:720px; margin:0 auto; padding:1rem 1.25rem 3rem; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:1rem 1.1rem; margin-bottom:1rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.6rem; }
+.pill { border:1px solid var(--line); border-radius:9px; padding:.6rem .7rem; display:flex;
+  flex-direction:column; gap:.15rem; }
+.pill .st { font-weight:600; }
+.pill.on .st { color:var(--accent); }
+.pill.off .st { color:var(--muted); }
+.row { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin-top:.75rem; }
+button { font:inherit; padding:.5rem .9rem; border-radius:8px; border:1px solid var(--accent);
+  background:var(--accent); color:#fff; cursor:pointer; }
+button.secondary { background:transparent; color:var(--fg); border-color:var(--line); }
+button.danger { background:var(--danger); border-color:var(--danger); }
+button.link { align-self:flex-start; background:none; border:none; color:var(--muted);
+  padding:0; text-decoration:underline; font-size:.85rem; }
+label { display:inline-flex; align-items:center; gap:.4rem; }
+.ck { display:flex; margin:.35rem 0; }
+.rng { display:flex; gap:.5rem; margin:.5rem 0; }
+select { font:inherit; padding:.3rem; }
+.muted { color:var(--muted); font-size:.85rem; }
+.warn { color:var(--warn); font-weight:600; }
+.ok { color:var(--accent); font-weight:600; }
+.live { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:.75rem;
+  overflow-x:auto; font:12px/1.5 ui-monospace, monospace; white-space:pre; }
+[hidden] { display:none !important; }

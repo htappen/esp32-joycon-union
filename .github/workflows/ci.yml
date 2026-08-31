@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  host-tests:
+    name: Host unit tests (merge / xbox_report / joycon_decode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & run
+        run: make -C firmware/test test
+      - name: Strict warnings gate
+        run: make -C firmware/test clean && make -C firmware/test CFLAGS="-std=c99 -O2 -Wall -Wextra -Werror -pedantic -g" test
+
+  firmware-build:
+    name: ESP-IDF firmware build (esp32)
+    runs-on: ubuntu-latest
+    # Best-effort: needs the managed component versions in main/idf_component.yml
+    # to be locked (plan §2). Not gating until M0 confirms the toolchain pin.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: idf.py build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.3.1
+          target: esp32
+          path: firmware

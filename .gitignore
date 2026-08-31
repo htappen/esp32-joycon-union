@@ -1,0 +1,21 @@
+# ESP-IDF build output
+/firmware/build/
+/firmware/sdkconfig
+/firmware/sdkconfig.old
+/firmware/managed_components/
+/firmware/dependencies.lock
+
+# Host unit-test build output
+/firmware/test/build/
+*.o
+*.out
+/firmware/test/run_tests
+
+# Secrets (compile-time Wi-Fi STA creds live in Kconfig or a git-ignored header)
+/firmware/main/secrets.h
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store

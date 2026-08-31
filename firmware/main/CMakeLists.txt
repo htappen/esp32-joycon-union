@@ -1,0 +1,20 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "mode_manager.c"
+        "status_led.c"
+    INCLUDE_DIRS "."
+    REQUIRES
+        merge
+        joycon
+        ble_out
+        webcfg
+        store
+        nvs_flash
+        esp_timer
+        esp_system
+        driver
+        json
+        led_strip
+        bluepad32
+)

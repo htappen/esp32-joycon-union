@@ -1,0 +1,26 @@
+# Managed dependencies (ESP-IDF Component Manager).
+#
+# Bluepad32 provides the Classic HID *host* and bundles BTstack as the host
+# stack.  Pin these to the exact versions verified against Bluepad32's
+# CHANGELOG.md at pin time (plan §2, NFR-10) — the ranges below are a starting
+# point and MUST be locked to explicit versions before M0.
+dependencies:
+  idf:
+    version: ">=5.3.0"
+
+  # Classic HID host + bundled BTstack.
+  ricardoquesada/bluepad32:
+    version: "^4.2.0"
+
+  # BTstack port (bluepad32 depends on this transitively; listed so the LE
+  # peripheral code can rely on a known version — see components/ble_out).
+  ricardoquesada/btstack:
+    version: "*"
+
+  # WS2812 status LED.
+  espressif/led_strip:
+    version: "^2.5.5"
+
+  # mDNS for Config Mode STA (joycon-bridge.local).
+  espressif/mdns:
+    version: "^1.2.0"

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joy-Con Bridge</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>Joy-Con Bridge</h1>
+  <span id="fw" class="muted"></span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Controllers</h2>
+    <div class="grid">
+      <div class="pill" id="jc-L"><b>Left Joy-Con</b><span class="st">—</span>
+        <button data-forget="0" class="link">forget</button></div>
+      <div class="pill" id="jc-R"><b>Right Joy-Con</b><span class="st">—</span>
+        <button data-forget="1" class="link">forget</button></div>
+      <div class="pill" id="host"><b>Host</b><span class="st">—</span>
+        <button data-hostforget class="link">forget</button></div>
+    </div>
+    <div class="row">
+      <button id="pair-start">Pair a Joy-Con</button>
+      <button id="pair-stop" class="secondary">Stop pairing</button>
+      <span id="degraded" class="warn" hidden>degraded</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Mapping</h2>
+    <label class="ck"><input type="checkbox" id="ab"> A/B match printed label (Xbox position)</label>
+    <label class="ck"><input type="checkbox" id="trigfull" checked> ZL/ZR map to full-scale triggers</label>
+    <label class="rng">Deadzone <input type="range" id="dz" min="0" max="12000" step="250">
+      <span id="dzv"></span></label>
+    <div class="row">
+      <label>Capture → <select id="map_capture"></select></label>
+      <label>L SL → <select id="map_left_sl"></select></label>
+      <label>L SR → <select id="map_left_sr"></select></label>
+      <label>R SL → <select id="map_right_sl"></select></label>
+      <label>R SR → <select id="map_right_sr"></select></label>
+    </div>
+    <div class="row">
+      <button id="save">Save mapping</button>
+      <span id="saved" class="ok" hidden>saved</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Input test</h2>
+    <pre id="live" class="live">connecting…</pre>
+  </section>
+
+  <section class="card">
+    <h2>Device</h2>
+    <div class="row">
+      <button id="reboot" class="secondary">Reboot</button>
+      <button id="factory" class="danger">Factory reset</button>
+    </div>
+  </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
