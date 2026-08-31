@@ -341,10 +341,9 @@ void app_main(void)
     }
     ESP_LOGI(TAG, "startup: nvs ready");
 
-    // Temporarily disabled while bringing up the rest of the firmware.
-    // status_led_init();
-    // status_led_set(LED_BOOT);
-    ESP_LOGI(TAG, "startup: led disabled");
+    status_led_init();
+    ESP_LOGI(TAG, "startup: led ready");
+    status_led_set(LED_BOOT);
 
     config_store_init();
     config_store_load(&s_cfg);
