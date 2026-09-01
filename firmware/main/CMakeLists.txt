@@ -15,6 +15,7 @@ idf_component_register(
         esp_system
         driver
         json
+        console
         led_strip
         bluepad32
 )

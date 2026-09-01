@@ -86,7 +86,8 @@ void mode_manager_init(const mode_manager_cb_t *cb)
     };
     gpio_config(&io);
 
-    xTaskCreatePinnedToCore(mode_task, "mode", 3072, NULL, 4, NULL, 1);
+    /* Config-mode entry starts Wi-Fi and the HTTP server synchronously. */
+    xTaskCreatePinnedToCore(mode_task, "mode", 6144, NULL, 4, NULL, 1);
 }
 
 jcb_mode_t mode_manager_current(void) { return s_mode; }

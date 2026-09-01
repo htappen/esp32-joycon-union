@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "cJSON.h"
+#include "esp_console.h"
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_system.h"
@@ -274,6 +275,33 @@ static void web_host_forget(void)
 
 static void web_reboot(void) { esp_restart(); }
 
+#if CONFIG_BLUEPAD32_USB_CONSOLE_ENABLE
+static int mode_command(int argc, char **argv)
+{
+    if (argc != 2 || (strcmp(argv[1], "config") != 0 && strcmp(argv[1], "play") != 0)) {
+        printf("usage: mode config|play\n");
+        return 1;
+    }
+
+    mode_manager_request(strcmp(argv[1], "config") == 0 ? MODE_CONFIG : MODE_PLAY);
+    printf("requested %s mode\n", argv[1]);
+    return 0;
+}
+
+static void register_mode_command(void)
+{
+    const esp_console_cmd_t command = {
+        .command = "mode",
+        .help = "switch between Play and Config modes",
+        .hint = "config|play",
+        .func = mode_command,
+    };
+    ESP_ERROR_CHECK(esp_console_cmd_register(&command));
+}
+#else
+static void register_mode_command(void) {}
+#endif
+
 static void do_factory_reset(void)
 {
     joycon_host_forget_all();
@@ -379,6 +407,7 @@ void app_main(void)
         .factory_reset = do_factory_reset,
     };
     mode_manager_init(&mmc);
+    register_mode_command();
     ESP_LOGI(TAG, "startup: mode manager ready");
 
     xTaskCreatePinnedToCore(output_task, "output", 4096, NULL, 6, NULL, 1);
