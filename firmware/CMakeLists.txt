@@ -20,6 +20,17 @@ if(EXISTS "${BLUEPAD32_LE_FILE}")
             }]=])
     string(REPLACE "${BLUEPAD32_LE_OLD}" "${BLUEPAD32_LE_NEW}" BLUEPAD32_LE_SOURCE
            "${BLUEPAD32_LE_SOURCE}")
+    set(BLUEPAD32_REENCRYPT_OLD [=[                case ERROR_CODE_SUCCESS:
+                    logi("Re-encryption complete, success\n");
+                    request_device_information_query = true;
+                    break;]=])
+    set(BLUEPAD32_REENCRYPT_NEW [=[                case ERROR_CODE_SUCCESS:
+                    logi("Re-encryption complete, success\n");
+                    if (uni_hid_device_get_instance_for_connection_handle(con_handle) != NULL)
+                        request_device_information_query = true;
+                    break;]=])
+    string(REPLACE "${BLUEPAD32_REENCRYPT_OLD}" "${BLUEPAD32_REENCRYPT_NEW}" BLUEPAD32_LE_SOURCE
+           "${BLUEPAD32_LE_SOURCE}")
     file(WRITE "${BLUEPAD32_LE_FILE}" "${BLUEPAD32_LE_SOURCE}")
 endif()
 
