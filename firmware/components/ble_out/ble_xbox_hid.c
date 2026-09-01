@@ -40,8 +40,11 @@ static struct {
     bool             connected;
     bool             suspended;
     bool             can_send;
+    bool             can_send_requested;
     uint8_t          last_report[XBOX_HID_REPORT_LEN];
     bool             report_dirty;
+    bool             report_callback_pending;
+    btstack_context_callback_registration_t report_callback;
     uint8_t          battery;
     btstack_packet_callback_registration_t hci_cb;
     btstack_packet_callback_registration_t sm_cb;
@@ -51,6 +54,9 @@ static struct {
     .battery    = 100,
     .lock       = portMUX_INITIALIZER_UNLOCKED,
 };
+
+static uint32_t s_reports_received;
+static uint32_t s_reports_sent;
 
 /* --- Advertising ----------------------------------------------------- */
 
@@ -87,9 +93,49 @@ static void start_advertising(void)
 static void flush_report(void)
 {
     if (!S.connected || !S.can_send || !S.report_dirty) return;
+
+    uint8_t report[XBOX_HID_REPORT_LEN];
+    portENTER_CRITICAL(&S.lock);
+    if (!S.connected || !S.can_send || !S.report_dirty) {
+        portEXIT_CRITICAL(&S.lock);
+        return;
+    }
+    memcpy(report, S.last_report, sizeof(report));
     S.can_send = false;
     S.report_dirty = false;
-    hids_device_send_input_report(S.con_handle, S.last_report, sizeof(S.last_report));
+    portEXIT_CRITICAL(&S.lock);
+    hids_device_send_input_report(S.con_handle, report, sizeof(report));
+    s_reports_sent++;
+    if (s_reports_sent == 1 || (s_reports_sent % 100) == 0)
+        ESP_LOGI(TAG, "input reports sent=%u", (unsigned)s_reports_sent);
+}
+
+/* BTstack is serviced on the Bluepad32 task (core 0). The output task runs
+ * on core 1, so all BTstack/HIDS calls must be deferred to that task. */
+static void report_bt_callback(void *context)
+{
+    (void)context;
+    S.report_callback_pending = false;
+    if (S.connected && S.report_dirty) {
+        if (S.can_send) flush_report();
+        else if (!S.can_send_requested) {
+            S.can_send_requested = true;
+            hids_device_request_can_send_now_event(S.con_handle);
+        }
+    }
+}
+
+static void schedule_report_work(void)
+{
+    bool schedule = false;
+    portENTER_CRITICAL(&S.lock);
+    if (S.connected && S.report_dirty && !S.report_callback_pending) {
+        S.report_callback_pending = true;
+        schedule = true;
+    }
+    portEXIT_CRITICAL(&S.lock);
+    if (schedule)
+        btstack_run_loop_execute_on_main_thread(&S.report_callback);
 }
 
 static void hids_packet_handler(uint8_t type, uint16_t channel,
@@ -99,13 +145,23 @@ static void hids_packet_handler(uint8_t type, uint16_t channel,
     if (type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_HIDS_META) return;
 
+    ESP_LOGI(TAG, "HIDS event subevent=0x%02x",
+             hci_event_hids_meta_get_subevent_code(packet));
+
     switch (hci_event_hids_meta_get_subevent_code(packet)) {
         case HIDS_SUBEVENT_INPUT_REPORT_ENABLE:
-            ESP_LOGI(TAG, "host enabled input notifications");
-            hids_device_request_can_send_now_event(S.con_handle);
+            ESP_LOGI(TAG, "host %s input notifications (report %u)",
+                     hids_subevent_input_report_enable_get_enable(packet) ? "enabled" : "disabled",
+                     hids_subevent_input_report_enable_get_report_id(packet));
+            if (hids_subevent_input_report_enable_get_enable(packet) &&
+                !S.can_send_requested) {
+                S.can_send_requested = true;
+                hids_device_request_can_send_now_event(S.con_handle);
+            }
             break;
         case HIDS_SUBEVENT_CAN_SEND_NOW:
             S.can_send = true;
+            S.can_send_requested = false;
             flush_report();
             if (S.report_dirty) hids_device_request_can_send_now_event(S.con_handle);
             break;
@@ -135,13 +191,19 @@ static void hci_packet_handler(uint8_t type, uint16_t channel,
                 S.con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                 S.connected = true;
                 S.can_send = false;
+                S.can_send_requested = false;
+                S.report_callback_pending = false;
                 ESP_LOGI(TAG, "host connected (handle 0x%04x)", S.con_handle);
                 if (S.cfg.on_conn) S.cfg.on_conn(true, S.cfg.ctx);
+                schedule_report_work();
             }
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             S.connected = false;
             S.con_handle = HCI_CON_HANDLE_INVALID;
+            S.can_send = false;
+            S.can_send_requested = false;
+            S.report_callback_pending = false;
             ESP_LOGW(TAG, "host disconnected");
             if (S.cfg.on_conn) S.cfg.on_conn(false, S.cfg.ctx);
             start_advertising();           /* FR-12: re-advertise */
@@ -196,6 +258,7 @@ esp_err_t ble_xbox_hid_init(const ble_xbox_cfg_t *cfg)
     sm_add_event_handler(&S.sm_cb);
     att_server_register_packet_handler(hids_packet_handler);
     hids_device_register_packet_handler(hids_packet_handler);
+    S.report_callback.callback = report_bt_callback;
 
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
@@ -210,17 +273,18 @@ void ble_xbox_hid_send_report(const uint8_t *report, size_t len)
 {
     if (!report || len != XBOX_HID_REPORT_LEN) return;
 
+    s_reports_received++;
+    if (s_reports_received == 1 || (s_reports_received % 100) == 0)
+        ESP_LOGI(TAG, "input reports received=%u host_connected=%d can_send=%d",
+                 (unsigned)s_reports_received, S.connected, S.can_send);
+
     portENTER_CRITICAL(&S.lock);
     if (memcmp(S.last_report, report, len) != 0) {
         memcpy(S.last_report, report, len);
         S.report_dirty = true;
     }
     portEXIT_CRITICAL(&S.lock);
-
-    if (S.connected && S.report_dirty) {
-        if (S.can_send) flush_report();
-        else            hids_device_request_can_send_now_event(S.con_handle);
-    }
+    schedule_report_work();
 }
 
 bool ble_xbox_hid_connected(void) { return S.connected; }

@@ -11,6 +11,7 @@
 
 #include "joycon_host.h"
 
+#include <inttypes.h>
 #include <string.h>
 
 #include "esp_log.h"
@@ -41,6 +42,8 @@ static struct {
     volatile bool     pairing;
     bool              inited;
 } S;
+
+static uint32_t s_data_reports;
 
 static void btstack_init_and_loop_task(void *arg)
 {
@@ -242,6 +245,14 @@ static void plat_on_controller_data(uni_hid_device_t *d, uni_controller_t *ctl)
 
     joycon_state_t st;
     translate((jc_side_t)side, &ctl->gamepad, &st);
+    s_data_reports++;
+    if (s_data_reports == 1 || (s_data_reports % 100) == 0) {
+        ESP_LOGI(TAG, "input reports=%u side=%d axes=(%" PRId32 ",%" PRId32 ",%" PRId32 ",%" PRId32 ") buttons=0x%08x",
+                 (unsigned)s_data_reports, side,
+                 ctl->gamepad.axis_x, ctl->gamepad.axis_y,
+                 ctl->gamepad.axis_rx, ctl->gamepad.axis_ry,
+                 (unsigned)ctl->gamepad.buttons);
+    }
     st.battery_pct = ctl->battery == UNI_CONTROLLER_BATTERY_NOT_AVAILABLE
                          ? 0xFF
                          : (uint8_t)((ctl->battery * 100) / 255);
