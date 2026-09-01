@@ -185,12 +185,13 @@ static void web_get_live(char *buf, size_t len)
     snprintf(buf, len,
         "{\"lx\":%d,\"ly\":%d,\"rx\":%d,\"ry\":%d,\"lt\":%u,\"rt\":%u,"
         "\"buttons\":%u,\"degraded_left\":%s,\"degraded_right\":%s,"
-        "\"state\":{\"left\":%s,\"right\":%s,\"host\":%s}}",
+        "\"state\":{\"left\":%s,\"right\":%s,\"host\":%s},\"pairing\":%s}",
         o->lx, o->ly, o->rx, o->ry, o->lt, o->rt, (unsigned)o->buttons,
         o->degraded_left ? "true" : "false", o->degraded_right ? "true" : "false",
         joycon_host_connected(JC_SIDE_LEFT) ? "true" : "false",
         joycon_host_connected(JC_SIDE_RIGHT) ? "true" : "false",
-        ble_xbox_hid_connected() ? "true" : "false");
+        ble_xbox_hid_connected() ? "true" : "false",
+        joycon_host_pairing_enabled() ? "true" : "false");
 }
 
 static void web_get_mapping(char *buf, size_t len)

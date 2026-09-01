@@ -95,6 +95,7 @@ function connectWs() {
 
 function refreshPillsFrom(d) {
   if (!d.state) return;
+  setPairingStatus(d.pairing);
   setPill("jc-L", d.state.left, d.state.left ? "connected" : "not connected");
   setPill("jc-R", d.state.right, d.state.right ? "connected" : "not connected");
   setPill("host", d.state.host, d.state.host ? "connected" : "advertising");

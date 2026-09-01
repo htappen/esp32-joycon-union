@@ -123,7 +123,7 @@ static esp_err_t send_asset(httpd_req_t *r, const char *ctype,
                             const uint8_t *start, const uint8_t *end)
 {
     httpd_resp_set_type(r, ctype);
-    httpd_resp_set_hdr(r, "Cache-Control", "max-age=86400");
+    httpd_resp_set_hdr(r, "Cache-Control", "no-cache");
     return httpd_resp_send(r, (const char *)start, end - start);
 }
 
