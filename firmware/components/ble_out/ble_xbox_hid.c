@@ -59,7 +59,12 @@ static uint8_t adv_data[] = {
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS,
           0x12, 0x18,   /* HID service 0x1812 */
     0x03, BLUETOOTH_DATA_TYPE_APPEARANCE, 0xC4, 0x03,
-    0x18, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME,
+};
+
+/* Legacy BLE advertising data is limited to 31 bytes. Put the full device
+ * name in scan response data instead of overflowing the primary packet. */
+static uint8_t scan_response_data[] = {
+    0x19, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME,
           'X','b','o','x',' ','W','i','r','e','l','e','s','s',' ',
           'C','o','n','t','r','o','l','l','e','r',
 };
@@ -72,6 +77,7 @@ static void start_advertising(void)
     bd_addr_t null_addr = {0};
     gap_advertisements_set_params(adv_int_min, adv_int_max, 0, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(sizeof(adv_data), adv_data);
+    gap_scan_response_set_data(sizeof(scan_response_data), scan_response_data);
     gap_advertisements_enable(1);
     ESP_LOGI(TAG, "advertising");
 }
