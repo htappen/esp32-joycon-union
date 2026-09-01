@@ -76,6 +76,8 @@ other than the defaults. The **Joy-Con Bridge** menu contains:
 - SoftAP SSID and password (defaults: `joycon-bridge` and `joyconbridge`).
 - Optional WS2812 status LED and its GPIO (default GPIO 8 when enabled).
 - The default A/B button position and output report rate.
+- The Config Mode fallback timeout after boot (default 30 seconds; set to 0
+  to disable).
 
 Leaving the station SSID empty uses the built-in SoftAP and is the simplest
 first-time setup.
@@ -197,6 +199,13 @@ network. Open `http://joycon-bridge.local/` or the IP address printed by the
 serial monitor. If the station connection fails, the bridge falls back to the
 default SoftAP.
 
+When both Joy-Con addresses are already remembered, the bridge initially tries
+to reconnect in Play Mode. If neither Joy-Con connects before the configured
+startup timeout (30 seconds by default), it automatically enters Config Mode
+and enables pairing so the saved pairing can be repaired. If either Joy-Con
+connects, this startup fallback is cancelled; a single connected half remains
+usable in degraded Play Mode.
+
 Config Mode suspends the downstream Xbox controller link while the portal is
 open. Returning to Play Mode allows it to reconnect.
 
@@ -264,8 +273,8 @@ If a WS2812 status LED is enabled, its patterns are:
 ### Useful recovery checks
 
 - If the portal is unavailable and both Joy-Cons are already remembered, enter
-  Config Mode with the serial `mode config` command and watch the monitor for
-  the SoftAP or station IP address.
+  Config Mode with the serial `mode config` command, or wait for the startup
+  fallback timeout. Watch the monitor for the SoftAP or station IP address.
 - If a Joy-Con is not found, click **Pair a Joy-Con** before pressing its sync
   button, and confirm it is a Switch 1 Joy-Con.
 - If an old controller is interfering, use the relevant **forget** button and

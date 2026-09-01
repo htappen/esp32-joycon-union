@@ -42,6 +42,8 @@ static QueueHandle_t   s_jc_queue;     /* joycon_state_t from BT task */
 static merge_engine_t  s_merge;
 static jcb_config_t    s_cfg;
 static portMUX_TYPE    s_cfg_lock = portMUX_INITIALIZER_UNLOCKED;
+static bool             s_startup_fallback_armed;
+static uint32_t         s_startup_fallback_deadline_ms;
 
 static inline uint32_t now_ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
 
@@ -128,6 +130,25 @@ static void output_task(void *arg)
         if (t - last_housekeep >= 100) {
             last_housekeep = t;
             update_led();
+
+            /* A saved pair can leave the device in Play Mode with no way to
+             * reach the portal if both Joy-Cons are unavailable. Give their
+             * normal auto-reconnect a grace period, then provide recovery via
+             * Config Mode. A single connected half deliberately cancels this
+             * startup-only fallback and stays degraded in Play Mode. */
+            if (s_startup_fallback_armed &&
+                (joycon_host_connected(JC_SIDE_LEFT) ||
+                 joycon_host_connected(JC_SIDE_RIGHT))) {
+                s_startup_fallback_armed = false;
+                ESP_LOGI(TAG, "startup: Joy-Con connected; Config Mode fallback cancelled");
+            } else if (s_startup_fallback_armed &&
+                       mode_manager_current() == MODE_PLAY &&
+                       (int32_t)(t - s_startup_fallback_deadline_ms) >= 0) {
+                s_startup_fallback_armed = false;
+                ESP_LOGW(TAG, "startup: no Joy-Con connected after %u seconds; entering Config Mode",
+                         (unsigned)CONFIG_JCB_CONFIG_FALLBACK_TIMEOUT_S);
+                mode_manager_request(MODE_CONFIG);
+            }
 
             uint8_t bl = joycon_host_battery(JC_SIDE_LEFT);
             uint8_t br = joycon_host_battery(JC_SIDE_RIGHT);
@@ -417,6 +438,12 @@ void app_main(void)
     if (!s_cfg.joycon_left.valid || !s_cfg.joycon_right.valid) {
         ESP_LOGI(TAG, "startup: fewer than two remembered controllers; entering Config Mode");
         mode_manager_request(MODE_CONFIG);
+    } else if (CONFIG_JCB_CONFIG_FALLBACK_TIMEOUT_S > 0) {
+        s_startup_fallback_armed = true;
+        s_startup_fallback_deadline_ms =
+            now_ms() + (uint32_t)CONFIG_JCB_CONFIG_FALLBACK_TIMEOUT_S * 1000u;
+        ESP_LOGI(TAG, "startup: Config Mode fallback armed for %u seconds",
+                 (unsigned)CONFIG_JCB_CONFIG_FALLBACK_TIMEOUT_S);
     }
     ESP_LOGI(TAG, "startup: mode manager ready");
 

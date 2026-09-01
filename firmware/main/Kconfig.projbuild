@@ -50,4 +50,14 @@ config JCB_OUTPUT_RATE_HZ
     int "Host report / merge tick rate (Hz) — NFR-2 floor is 100"
     default 250
 
+config JCB_CONFIG_FALLBACK_TIMEOUT_S
+    int "Config Mode fallback timeout after boot (seconds; 0 disables)"
+    range 0 300
+    default 30
+    help
+        If both Joy-Con addresses are remembered but neither Joy-Con connects
+        during this startup grace period, enter Config Mode automatically so
+        the user can repair pairing. A one-sided connection cancels the
+        fallback and remains in degraded Play Mode.
+
 endmenu
