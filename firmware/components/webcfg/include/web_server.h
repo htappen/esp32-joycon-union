@@ -26,6 +26,7 @@ typedef struct {
     esp_err_t (*put_mapping_json)(const char *body, size_t len); /* PUT /api/mapping */
     void      (*get_version_json)(char *buf, size_t len);   /* GET  /api/version  */
     void      (*set_pairing)(bool enable);                  /* POST /api/pairing/{start,stop} */
+    void      (*request_mode)(bool config);                  /* POST /api/mode/play */
     void      (*joycon_forget)(int side /*0=L,1=R*/);       /* POST /api/joycon/{L,R}/forget */
     void      (*host_forget)(void);                         /* POST /api/host/forget */
     void      (*reboot)(void);                              /* POST /api/reboot   */

@@ -103,6 +103,7 @@ function refreshPillsFrom(d) {
 function wire() {
   $("#pair-start").onclick = () => fetch("/api/pairing/start", { method: "POST" }).then(refreshState);
   $("#pair-stop").onclick  = () => fetch("/api/pairing/stop",  { method: "POST" }).then(refreshState);
+  $("#mode-play").onclick = () => fetch("/api/mode/play", { method: "POST" });
   document.querySelectorAll("[data-forget]").forEach((b) => {
     b.onclick = () => {
       const side = b.dataset.forget === "1" ? "R" : "L";

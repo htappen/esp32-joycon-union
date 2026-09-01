@@ -253,6 +253,10 @@ static void web_get_version(char *buf, size_t len)
 }
 
 static void web_set_pairing(bool en) { joycon_host_set_pairing(en); }
+static void web_request_mode(bool config)
+{
+    mode_manager_request(config ? MODE_CONFIG : MODE_PLAY);
+}
 
 static void web_joycon_forget(int side)
 {
@@ -318,6 +322,7 @@ static const web_bridge_t s_web_bridge = {
     .put_mapping_json = web_put_mapping,
     .get_version_json = web_get_version,
     .set_pairing      = web_set_pairing,
+    .request_mode     = web_request_mode,
     .joycon_forget    = web_joycon_forget,
     .host_forget      = web_host_forget,
     .reboot           = web_reboot,
@@ -333,6 +338,7 @@ static void enter_config(void)
     /* FR-22 fallback (Q5 = allowed): suspend the host link while the portal
      * is open so Wi-Fi + BT coexistence isn't a problem. */
     ble_xbox_hid_suspend();
+    joycon_host_set_pairing(true);
     static const web_wifi_cfg_t wifi = {
         .sta_ssid      = CONFIG_JCB_WIFI_STA_SSID,
         .sta_pass      = CONFIG_JCB_WIFI_STA_PASS,
@@ -404,10 +410,13 @@ void app_main(void)
     static const mode_manager_cb_t mmc = {
         .enter_config  = enter_config,
         .enter_play    = enter_play,
-        .factory_reset = do_factory_reset,
     };
     mode_manager_init(&mmc);
     register_mode_command();
+    if (!s_cfg.joycon_left.valid || !s_cfg.joycon_right.valid) {
+        ESP_LOGI(TAG, "startup: fewer than two remembered controllers; entering Config Mode");
+        mode_manager_request(MODE_CONFIG);
+    }
     ESP_LOGI(TAG, "startup: mode manager ready");
 
     xTaskCreatePinnedToCore(output_task, "output", 4096, NULL, 6, NULL, 1);

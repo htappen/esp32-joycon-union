@@ -199,6 +199,14 @@ static esp_err_t h_pairing(httpd_req_t *r)
     return httpd_resp_sendstr(r, "{\"ok\":true}");
 }
 
+static esp_err_t h_mode_play(httpd_req_t *r)
+{
+    httpd_resp_sendstr(r, "{\"ok\":true}");
+    vTaskDelay(pdMS_TO_TICKS(200));
+    S.bridge.request_mode(false);
+    return ESP_OK;
+}
+
 static esp_err_t h_joycon_forget(httpd_req_t *r)
 {
     int side = strstr(r->uri, "/R/") != NULL ? 1 : 0;
@@ -304,6 +312,7 @@ esp_err_t web_server_start(const web_bridge_t *bridge, const web_wifi_cfg_t *wif
     reg(S.http, "/api/mapping", HTTP_GET, h_mapping_get);
     reg(S.http, "/api/mapping", HTTP_PUT, h_mapping_put);
     reg(S.http, "/api/pairing/*",      HTTP_POST, h_pairing);
+    reg(S.http, "/api/mode/play",     HTTP_POST, h_mode_play);
     reg(S.http, "/api/joycon/*/forget", HTTP_POST, h_joycon_forget);
     reg(S.http, "/api/host/forget",    HTTP_POST, h_host_forget);
     reg(S.http, "/api/reboot",         HTTP_POST, h_reboot);
