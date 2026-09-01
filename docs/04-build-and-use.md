@@ -103,6 +103,74 @@ seconds by default:
 ./scripts/build-flash-monitor.sh /dev/ttyACM0 15
 ```
 
+### Flashing from loose files
+
+Use this procedure when sending firmware to someone who will flash it with
+[Espressif ESP LaunchPad](https://espressif.github.io/esp-launchpad/). LaunchPad
+supports selecting multiple local binaries and assigning each one a flash
+address.
+
+After a successful `idf.py build`, send these three files from `firmware/build`
+to the recipient:
+
+| File | Flash address |
+| --- | ---: |
+| `bootloader/bootloader.bin` | `0x1000` |
+| `partition_table/partition-table.bin` | `0x8000` |
+| `joycon_bridge.bin` | `0x10000` |
+
+The project uses a custom partition table with the application at `0x10000`.
+Do not substitute `boot_app0.bin`, `ota_data_initial.bin`, or a `storage`
+image: this is a single-application image and the web files are embedded in
+`joycon_bridge.bin`. The `firmware/build/flash_args` file records the same
+mapping for reference.
+
+Send the files without renaming them, or include a note matching each renamed
+file to the table above. The build directory is generated output; do not send
+the ELF, MAP, object files, or the entire build directory.
+
+#### Recipient flashing steps
+
+1. Use a classic ESP32-WROOM-32 board with 4 MB flash, connect it with a USB
+   data cable, and close other programs using the serial port.
+2. Open [ESP LaunchPad](https://espressif.github.io/esp-launchpad/) in a
+   Web Serial-capable browser such as Chrome or Edge. The site must be opened
+   over HTTPS, as required by Web Serial.
+3. Click **Connect** and select the board's USB serial port.
+4. In the DIY/local firmware area, add the three files and enter the addresses
+   exactly as shown in the table. Use **Program** to flash them.
+5. Watch the LaunchPad console until it reports that flashing completed, then
+   click **Reset Device**. Flashing overwrites the earlier firmware on the
+   board.
+
+#### Verify the flash
+
+The recipient should provide the following evidence of success:
+
+1. LaunchPad reports a completed flash with no error.
+2. After **Reset Device**, the serial console is set to `115200` baud and
+   shows startup messages including `Joy-Con Bridge`, `startup: nvs ready`,
+   `startup: joycon host ready`, and `startup: BLE host ready`.
+3. If the board has no saved pair of Joy-Cons, the log says it is entering
+   Config Mode. The recipient can then connect to the `joycon-bridge` Wi-Fi
+   network and open `http://192.168.4.1/` as described in
+   [User instructions](#user-instructions-after-the-firmware-is-built).
+
+If it does not work, do not paraphrase the failure. Send back:
+
+- The complete LaunchPad console output from **Connect** through the failure
+  or reset.
+- Any browser error or LaunchPad error text, including the step at which it
+  appeared.
+- The board model, the detected chip/flash size if shown, operating system,
+  browser, and serial port selected.
+- Whether the board reset and what appears at `115200` baud afterward.
+
+Common causes are selecting an ESP32-S3/C3/C6 instead of a classic ESP32,
+using a charge-only USB cable, choosing the wrong serial port, or entering an
+address incorrectly. If the board is not detected, check the USB-UART driver
+and try holding BOOT while connecting or resetting the board.
+
 The firmware currently contains the complete host-side logic, configuration
 portal, and BLE HID implementation, but on-target Windows XInput and Android
 compatibility testing remains part of the project validation work. See
