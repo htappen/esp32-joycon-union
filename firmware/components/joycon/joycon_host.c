@@ -65,6 +65,7 @@ static int device_side(const uni_hid_device_t *d)
         case CONTROLLER_TYPE_SwitchJoyConLeft:  return JC_SIDE_LEFT;
         case CONTROLLER_TYPE_SwitchJoyConRight: return JC_SIDE_RIGHT;
 #if CONFIG_JCB_TEST_PRO_CONTROLLERS
+        case CONTROLLER_TYPE_8BitdoController:
         case CONTROLLER_TYPE_SwitchProController: {
             bd_addr_t addr;
             uni_bt_conn_get_address(&d->conn, addr);

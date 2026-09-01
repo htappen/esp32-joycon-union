@@ -34,13 +34,13 @@ config JCB_STATUS_LED_GPIO
     default 8
 
 config JCB_TEST_PRO_CONTROLLERS
-    bool "Accept Switch Pro controllers as virtual Joy-Con halves"
+    bool "Accept Switch Pro/8BitDo controllers as virtual Joy-Con halves"
     default n
     help
         For hardware testing without Joy-Cons, assign the first accepted
-        Switch Pro controller to the virtual left half and the second to the
-        virtual right half. Each controller contributes the stick and buttons
-        associated with its assigned half.
+        Switch Pro or 8BitDo controller to the virtual left half and the
+        second to the virtual right half. Each controller contributes the
+        stick and buttons associated with its assigned half.
 
 config JCB_MODE_BUTTON_GPIO
     int "Mode button GPIO (reuse BOOT / GPIO0)"

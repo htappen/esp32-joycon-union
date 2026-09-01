@@ -29,6 +29,18 @@ function setPill(id, on, text) {
   el.querySelector(".st").textContent = text;
 }
 
+function setPairingStatus(on) {
+  const status = $("#pairing-status");
+  status.classList.toggle("on", on);
+  status.classList.toggle("off", !on);
+  status.textContent = on ? "Pairing mode: ON" : "Pairing mode: OFF";
+  $("#pairing-help").textContent = on
+    ? "Pairing is active. Put the new controller into Bluetooth pairing mode."
+    : "Pairing is off. Start pairing before connecting a new controller.";
+  $("#pair-start").disabled = on;
+  $("#pair-stop").disabled = !on;
+}
+
 async function refreshState() {
   try {
     const s = await api("/api/state");
@@ -38,6 +50,7 @@ async function refreshState() {
       s.right.connected ? `${s.right.addr} · ${s.right.battery}%` : "not connected");
     setPill("host", s.host.connected,
       s.host.connected ? "connected" : (s.host.remembered ? "remembered" : "advertising"));
+    setPairingStatus(s.pairing);
     $("#degraded").hidden = !s.degraded;
   } catch (e) { /* Config Mode may briefly drop BT; ignore */ }
 }
@@ -88,8 +101,8 @@ function refreshPillsFrom(d) {
 }
 
 function wire() {
-  $("#pair-start").onclick = () => fetch("/api/pairing/start", { method: "POST" });
-  $("#pair-stop").onclick  = () => fetch("/api/pairing/stop",  { method: "POST" });
+  $("#pair-start").onclick = () => fetch("/api/pairing/start", { method: "POST" }).then(refreshState);
+  $("#pair-stop").onclick  = () => fetch("/api/pairing/stop",  { method: "POST" }).then(refreshState);
   document.querySelectorAll("[data-forget]").forEach((b) => {
     b.onclick = () => {
       const side = b.dataset.forget === "1" ? "R" : "L";

@@ -32,6 +32,9 @@ label { display:inline-flex; align-items:center; gap:.4rem; }
 select { font:inherit; padding:.3rem; }
 .muted { color:var(--muted); font-size:.85rem; }
 .warn { color:var(--warn); font-weight:600; }
+.pairing-status { font-weight:700; }
+.pairing-status.on { color:var(--accent); }
+.pairing-status.off { color:var(--muted); }
 .ok { color:var(--accent); font-weight:600; }
 .live { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:.75rem;
   overflow-x:auto; font:12px/1.5 ui-monospace, monospace; white-space:pre; }
