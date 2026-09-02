@@ -126,6 +126,11 @@ idf.py build
 idf.py -p <PORT> flash monitor
 ```
 
+For browser-based flashing from a build shared as loose files, follow the
+[ESP LaunchPad instructions](../docs/04-build-and-use.md#flashing-from-loose-files).
+They include the required three files, flash addresses, and an official
+LaunchPad screenshot.
+
 Before the first build, **lock the managed-component versions** in
 `main/idf_component.yml` against Bluepad32's current `CHANGELOG.md` (plan §2),
 and confirm the chip with `esptool.py -p <PORT> chip_id` — it must be a classic

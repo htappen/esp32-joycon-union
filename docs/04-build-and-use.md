@@ -135,15 +135,23 @@ the ELF, MAP, object files, or the entire build directory.
 
 1. Use a classic ESP32-WROOM-32 board with 4 MB flash, connect it with a USB
    data cable, and close other programs using the serial port.
-2. Open [ESP LaunchPad](https://espressif.github.io/esp-launchpad/) in a
-   Web Serial-capable browser such as Chrome or Edge. The site must be opened
-   over HTTPS, as required by Web Serial.
-3. Click **Connect** and select the board's USB serial port.
-4. In the DIY/local firmware area, add the three files and enter the addresses
-   exactly as shown in the table. Use **Program** to flash them.
-5. Watch the LaunchPad console until it reports that flashing completed, then
-   click **Reset Device**. Flashing overwrites the earlier firmware on the
-   board.
+2. Open [ESP LaunchPad](https://espressif.github.io/esp-launchpad/) in Chrome
+   or Edge. The site must be opened over HTTPS because Web Serial is required.
+3. Click **Connect** in the top bar and select the board's USB serial port in
+   the browser dialog. If no port appears, reconnect the USB cable and close
+   any serial monitor that may already have the port open.
+4. In the DIY/local firmware area, add one file at a time with **Add File**.
+   Enter the matching address from the table above for each file; the rows
+   should look like the three rows shown in the screenshot.
+5. Click **Program**, then watch the LaunchPad console for progress. When the
+   completion message appears, click **Reset Device**. Flashing overwrites the
+   earlier firmware on the board.
+
+![ESP LaunchPad DIY flashing screen, including the local-file rows, Program button, console, and Reset Device control](https://raw.githubusercontent.com/espressif/esp-box/master/docs/_static/launchpad_en.png)
+
+*Screenshot: Espressif's official ESP LaunchPad documentation. The example may
+show a different board or filename; use the Joy-Con Bridge files and addresses
+in the table above.*
 
 #### Verify the flash
 
